@@ -1,34 +1,49 @@
+
 <!DOCTYPE html>
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Yasso PES</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>YASSO PES 3D</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;overflow:hidden;background:#111;font-family:Arial;touch-action:none}
 canvas{display:block}
-#score{
+#top{
  position:absolute;top:12px;left:50%;transform:translateX(-50%);
- background:#111d;color:white;padding:10px 24px;border-radius:12px;
- font-size:20px;z-index:3
+ background:#101820e8;color:white;padding:12px 25px;
+ border-radius:12px;font-size:21px;z-index:5
 }
-#controls{position:absolute;bottom:25px;width:100%;display:flex;
- justify-content:space-between;align-items:end;padding:0 20px;z-index:4}
-#stick{width:125px;height:125px;border-radius:50%;background:#ffffff44;
- border:2px solid white;position:relative;touch-action:none}
+#team{font-size:10px;text-align:center;color:#ddd;margin-top:3px}
+#controls{position:absolute;bottom:20px;width:100%;display:flex;
+ justify-content:space-between;align-items:end;padding:0 17px;z-index:5}
+#stick{width:125px;height:125px;border:2px solid #ffffffaa;
+ background:#ffffff30;border-radius:50%;position:relative}
 #knob{width:48px;height:48px;border-radius:50%;background:#fff;
  position:absolute;left:36px;top:36px}
-.buttons{display:flex;gap:10px;align-items:end}
-button{border:0;border-radius:50%;width:67px;height:67px;
- background:#ffffffdd;font-weight:bold;font-size:14px}
-#message{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
- color:white;background:#000b;padding:20px;border-radius:12px;z-index:5}
+.buttons{display:flex;gap:9px;align-items:end}
+button{border:2px solid #ffffffaa;border-radius:50%;width:65px;height:65px;
+ background:#152b40e8;color:white;font-weight:bold;font-size:13px}
+#shoot{width:77px;height:77px;background:#c52c26}
+#start{position:absolute;inset:0;background:#071a17eF;color:white;
+ display:flex;align-items:center;justify-content:center;z-index:10;text-align:center}
+#start button{border-radius:12px;width:auto;height:auto;padding:15px 35px;
+ background:#16864b;font-size:19px}
+#hint{position:absolute;top:75px;left:50%;transform:translateX(-50%);
+ color:white;font-size:12px;white-space:nowrap}
 </style>
 </head>
 <body>
-<div id="score">0 - 0</div>
-<div id="message">YASSO PES<br>جاري تحميل اللعبة...</div>
+<div id="top"><span id="score">0 - 0</span><div id="team">YASSO PES 3D</div></div>
+<div id="hint">تحرك بالعصا وسدد نحو المرمى</div>
+
+<div id="start">
+ <div>
+  <h1>⚽ YASSO PES</h1>
+  <p>نسخة كرة القدم ثلاثية الأبعاد</p>
+  <button id="play">ابدأ المباراة</button>
+ </div>
+</div>
 
 <div id="controls">
  <div id="stick"><div id="knob"></div></div>
@@ -40,219 +55,322 @@ button{border:0;border-radius:50%;width:67px;height:67px;
 </div>
 
 <script type="importmap">
-{
- "imports":{
-  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
- }
-}
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
 </script>
-
 <script type="module">
 import * as THREE from 'three';
 
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x87ceeb);
-scene.fog=new THREE.Fog(0x87ceeb,35,90);
+scene.background=new THREE.Color(0x91b9d2);
+scene.fog=new THREE.Fog(0x91b9d2,65,120);
 
-const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,150);
-camera.position.set(0,10,15);
+const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,200);
+camera.position.set(0,12,20);
 
 const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.HemisphereLight(0xffffff,0x446644,2));
-const sun=new THREE.DirectionalLight(0xffffff,2);
-sun.position.set(5,15,10);scene.add(sun);
+scene.add(new THREE.HemisphereLight(0xffffff,0x53634b,2));
+const sun=new THREE.DirectionalLight(0xffffff,2.5);
+sun.position.set(-20,35,15);
+sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+scene.add(sun);
 
-function box(w,h,d,color,x,y,z){
- const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
- new THREE.MeshStandardMaterial({color}));
- m.position.set(x,y,z);scene.add(m);return m;
+const mat=(color,roughness=.8)=>new THREE.MeshStandardMaterial({color,roughness});
+
+function cube(w,h,d,color,x,y,z){
+ const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color));
+ o.position.set(x,y,z);o.receiveShadow=true;o.castShadow=true;
+ scene.add(o);return o;
 }
 
-// الملعب
-box(32,.2,52,0x188b36,0,0,-2);
+// أرضية الملعب
+cube(34,.3,56,0x187b35,0,-.2,-2);
 
-const white=0xffffff;
-box(32,.04,.12,white,0,.12,24);
-box(32,.04,.12,white,0,.12,-28);
-box(.12,.04,52,white,16,.12,-2);
-box(.12,.04,52,white,-16,.12,-2);
-box(32,.04,.12,white,0,.12,-2);
+// خطوط الملعب
+const lineMat=new THREE.MeshBasicMaterial({color:0xffffff});
+function line(w,d,x,z){
+ const m=new THREE.Mesh(new THREE.BoxGeometry(w,.025,d),lineMat);
+ m.position.set(x,.0,z);scene.add(m);
+}
+line(34,.13,0,25);
+line(34,.13,0,-29);
+line(.13,54,17,-2);
+line(.13,54,-17,-2);
+line(34,.13,0,-2);
+line(18,.12,0,17);
+line(18,.12,0,-21);
 
-// خط المنتصف
-box(32,.04,.12,white,0,.13,-2);
-const circle=new THREE.Mesh(
- new THREE.RingGeometry(4.8,5,.80),
- new THREE.MeshBasicMaterial({color:white,side:THREE.DoubleSide})
-);
-circle.rotation.x=-Math.PI/2;circle.position.y=.14;
-circle.position.z=-2;scene.add(circle);
+const ring=new THREE.Mesh(new THREE.RingGeometry(5.8,5.95,64),lineMat);
+ring.rotation.x=-Math.PI/2;ring.position.set(0,.02,-2);scene.add(ring);
 
-// المرميان
+// مناطق الجزاء
+line(18,.12,0,17);
+line(18,.12,0,-21);
+line(.12,8,-9,21);
+line(.12,8,9,21);
+line(.12,8,-9,-25);
+line(.12,8,9,-25);
+
+// المدرجات
+cube(39,5,5,0x45515c,0,2.3,-34);
+cube(39,5,5,0x45515c,0,2.3,30);
+cube(5,5,62,0x45515c,-20,2.3,-2);
+cube(5,5,62,0x45515c,20,2.3,-2);
+
+const colors=[0x1649bb,0xd92929,0xf4f4f4,0x171717];
+for(let side of [-1,1]){
+ for(let row=0;row<4;row++){
+  for(let i=0;i<24;i++){
+   const x=-18+i*1.55;
+   const z=side*(31+row*.65);
+   const person=new THREE.Mesh(
+    new THREE.BoxGeometry(.42,.75,.35),
+    mat(colors[(i+row)%4])
+   );
+   person.position.set(x,5+row*.65,z);
+   scene.add(person);
+  }
+ }
+}
+
+// المرمى
 function goal(z){
- box(8,.18,.4,white,0,.4,z);
- box(.2,3,.3,white,-4,1.5,z);
- box(.2,3,.3,white,4,1.5,z);
- box(8,.2,.3,white,0,3,z);
+ const white=mat(0xffffff);
+ function post(x,y,zz,w,h,d){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),white);
+  m.position.set(x,y,zz);scene.add(m);
+ }
+ post(-4,1.5,z,.18,3,.2);
+ post(4,1.5,z,.18,3,.2);
+ post(0,3,z,8,.18,.2);
 }
-goal(24);goal(-28);
+goal(25);goal(-29);
 
-// لاعب
-function makePlayer(color,x,z){
- const group=new THREE.Group();
- const mat=new THREE.MeshStandardMaterial({color});
- const body=new THREE.Mesh(new THREE.CapsuleGeometry(.48,.8,4,8),mat);
- body.position.y=1;group.add(body);
- const head=new THREE.Mesh(new THREE.SphereGeometry(.28,16,16),
- new THREE.MeshStandardMaterial({color:0xffd0a0}));
- head.position.y=1.85;group.add(head);
- group.position.set(x,0,z);scene.add(group);return group;
+// صنع لاعب بمجسم وأطراف متحركة
+function limb(parent,r1,r2,length,color){
+ const mesh=new THREE.Mesh(
+  new THREE.CylinderGeometry(r2,r1,length,10),
+  mat(color)
+ );
+ mesh.castShadow=true;parent.add(mesh);return mesh;
+}
+function sphere(parent,r,color,x,y,z){
+ const m=new THREE.Mesh(new THREE.SphereGeometry(r,16,12),mat(color));
+ m.position.set(x,y,z);m.castShadow=true;parent.add(m);return m;
 }
 
-const players=[];
-for(let i=0;i<5;i++){
- players.push(makePlayer(0x1655ff, (i-2)*3, 7+Math.abs(i-2)*3));
+function createPlayer(team,x,z,isKeeper=false){
+ const root=new THREE.Group();
+ root.position.set(x,0,z);scene.add(root);
+
+ const shirt=team===0?0x174fc9:0xc92323;
+ const shorts=team===0?0x101b40:0xeeeeee;
+ const skin=0xc58d67;
+ const dark=0x161616;
+
+ const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.37,.65,5,10),mat(shirt));
+ torso.position.y=1.35;root.add(torso);
+ sphere(root,.25,skin,0,2.12,0);
+
+ // الشعر
+ sphere(root,.25,0x29201c,0,2.28,-.025);
+
+ const arms=[],legs=[];
+ for(let s of [-1,1]){
+  const arm=new THREE.Group();arm.position.set(s*.43,1.75,0);
+  root.add(arm);
+  limb(arm,.10,.075,.55,shirt).position.y=-.3;
+  sphere(arm,.085,skin,0,-.62,0);
+  arms.push(arm);
+
+  const leg=new THREE.Group();leg.position.set(s*.19,.85,0);
+  root.add(leg);
+  limb(leg,.12,.10,.58,shorts).position.y=-.28;
+  const shoe=new THREE.Mesh(new THREE.BoxGeometry(.19,.13,.34),mat(dark));
+  shoe.position.set(0,-.65,-.08);leg.add(shoe);
+  legs.push(leg);
+ }
+ return {root,arms,legs,team,isKeeper,velocity:new THREE.Vector3(),speed:0};
 }
-const enemies=[];
-for(let i=0;i<5;i++){
- enemies.push(makePlayer(0xdd2222,(i-2)*3,-12-Math.abs(i-2)*3));
+
+// 11 لاعب لكل فريق
+const home=[],away=[];
+for(let row=0;row<4;row++){
+ for(let col=0;col<3;col++){
+  if(home.length<10){
+   home.push(createPlayer(0,(col-1)*7,18-row*6));
+   away.push(createPlayer(1,(col-1)*7,-20+row*6));
+  }
+ }
 }
-const player=players[2];
+const keeperHome=createPlayer(0,0,23,true);
+const keeperAway=createPlayer(1,0,-27,true);
+home.push(keeperHome);away.push(keeperAway);
+const controlled=home[7];
 
 // الكرة
 const ball=new THREE.Mesh(
- new THREE.SphereGeometry(.35,24,24),
- new THREE.MeshStandardMaterial({color:0xffffff})
+ new THREE.SphereGeometry(.34,24,20),
+ mat(0xffffff,.4)
 );
-ball.position.set(0,.4,3);scene.add(ball);
-let velocity=new THREE.Vector3();
-let scoreA=0,scoreB=0;
+ball.position.set(0,.4,7);ball.castShadow=true;scene.add(ball);
+const ballVelocity=new THREE.Vector3();
+
 let joystick={x:0,y:0};
-let running=false;
+let sprint=false,scoreHome=0,scoreAway=0;
+let playing=false;
 
-// العصا الافتراضية
-const stick=document.getElementById('stick');
-const knob=document.getElementById('knob');
-let touching=false;
-
-stick.addEventListener('pointerdown',e=>{
- touching=true;stick.setPointerCapture(e.pointerId);moveStick(e);
-});
-stick.addEventListener('pointermove',e=>{if(touching)moveStick(e)});
-stick.addEventListener('pointerup',resetStick);
-stick.addEventListener('pointercancel',resetStick);
-
-function moveStick(e){
- const r=stick.getBoundingClientRect();
- let x=e.clientX-(r.left+r.width/2);
- let y=e.clientY-(r.top+r.height/2);
- const max=38;
- const len=Math.hypot(x,y);
- if(len>max){x=x/len*max;y=y/len*max}
- joystick.x=x/max;
- joystick.y=y/max;
- knob.style.left=(36+x)+'px';
- knob.style.top=(36+y)+'px';
-}
-function resetStick(){
- touching=false;joystick={x:0,y:0};
- knob.style.left='36px';knob.style.top='36px';
-}
-
-document.getElementById('run').onpointerdown=()=>running=true;
-document.getElementById('run').onpointerup=()=>running=false;
-
-function shoot(){
- const direction=new THREE.Vector3(
- player.position.x-ball.position.x,0,
- player.position.z-ball.position.z
- );
- if(direction.length()<2.5){
-  direction.set(0,0,-1).normalize();
-  velocity.copy(direction.multiplyScalar(0.65));
- }
-}
-function passBall(){
- const direction=new THREE.Vector3(
- 0,0,-1);
- if(player.position.distanceTo(ball.position)<2.5)
- velocity.copy(direction.multiplyScalar(.32));
-}
-document.getElementById('shoot').onclick=shoot;
-document.getElementById('pass').onclick=passBall;
-
-// الذكاء الاصطناعي
-function clampPlayer(p){
- p.position.x=THREE.MathUtils.clamp(p.position.x,-15,15);
+function distance(a,b){return a.distanceTo(b)}
+function clamp(p){
+ p.position.x=THREE.MathUtils.clamp(p.position.x,-16,16);
  p.position.z=THREE.MathUtils.clamp(p.position.z,-27,23);
 }
 
-let last=performance.now();
-function animate(now){
- requestAnimationFrame(animate);
- const dt=Math.min((now-last)/16.67,2);last=now;
+const stick=document.getElementById('stick');
+const knob=document.getElementById('knob');
+let active=false;
+stick.addEventListener('pointerdown',e=>{
+ active=true;stick.setPointerCapture(e.pointerId);move(e);
+});
+stick.addEventListener('pointermove',e=>{if(active)move(e)});
+stick.addEventListener('pointerup',reset);
+stick.addEventListener('pointercancel',reset);
 
- // حركة اللاعب
- const speed=running?.22:.13;
- player.position.x+=joystick.x*speed*dt;
- player.position.z+=joystick.y*speed*dt;
- clampPlayer(player);
-
- // متابعة الكرة واللاعب
- if(player.position.distanceTo(ball.position)<1.6){
-  ball.position.x=player.position.x;
-  ball.position.z=player.position.z-1;
- }
-
- // تحرك الخصوم نحو الكرة
- enemies.forEach((p,i)=>{
-  const dx=ball.position.x-p.position.x;
-  const dz=ball.position.z-p.position.z;
-  const len=Math.hypot(dx,dz)||1;
-  p.position.x+=dx/len*.035*dt;
-  p.position.z+=dz/len*.035*dt;
-  clampPlayer(p);
- });
-
- // الكرة
- ball.position.add(velocity.clone().multiplyScalar(dt));
- velocity.multiplyScalar(Math.pow(.985,dt));
- ball.position.y=.35+Math.abs(Math.sin(now*.01))*
- Math.min(velocity.length(),.2);
-
- // حدود الملعب
- ball.position.x=THREE.MathUtils.clamp(ball.position.x,-15.5,15.5);
-
- // الأهداف
- if(ball.position.z<-28){
-  scoreA++;resetBall();
- }
- if(ball.position.z>24){
-  scoreB++;resetBall();
- }
-
- // الكاميرا
- camera.position.x+=(player.position.x-camera.position.x)*.06;
- camera.position.z+=(player.position.z+12-camera.position.z)*.06;
- camera.lookAt(player.position.x,0,player.position.z-5);
-
- document.getElementById('score').textContent=scoreA+' - '+scoreB;
- renderer.render(scene,camera);
+function move(e){
+ const r=stick.getBoundingClientRect();
+ let x=e.clientX-r.left-r.width/2;
+ let y=e.clientY-r.top-r.height/2;
+ const l=Math.hypot(x,y),max=38;
+ if(l>max){x=x/l*max;y=y/l*max}
+ joystick={x:x/max,y:y/max};
+ knob.style.left=36+x+'px';knob.style.top=36+y+'px';
 }
+function reset(){
+ active=false;joystick={x:0,y:0};
+ knob.style.left='36px';knob.style.top='36px';
+}
+
+document.getElementById('run').onpointerdown=()=>sprint=true;
+document.getElementById('run').onpointerup=()=>sprint=false;
+document.getElementById('run').onpointerleave=()=>sprint=false;
+
+function kick(power){
+ if(distance(controlled.root.position,ball.position)<2.5){
+  const dir=new THREE.Vector3(0,0,-1);
+  dir.x=controlled.root.position.x-ball.position.x;
+  dir.z=-1;
+  dir.normalize();
+  ballVelocity.copy(dir.multiplyScalar(power));
+ }
+}
+document.getElementById('shoot').onclick=()=>kick(.95);
+document.getElementById('pass').onclick=()=>kick(.45);
 
 function resetBall(){
- ball.position.set(0,.4,3);
- velocity.set(0,0,0);
- player.position.set(0,0,7);
+ ball.position.set(0,.4,7);
+ ballVelocity.set(0,0,0);
+ controlled.root.position.set(0,0,18);
 }
 
-document.getElementById('message').innerHTML='YASSO PES<br>ابدأ اللعب!';
-setTimeout(()=>document.getElementById('message').style.display='none',2500);
+// حركة الأطراف
+function animatePlayer(p,t){
+ const swing=Math.sin(t*10+p.root.position.x)*p.speed;
+ p.legs[0].rotation.x=swing*.65;
+ p.legs[1].rotation.x=-swing*.65;
+ p.arms[0].rotation.x=-swing*.4;
+ p.arms[1].rotation.x=swing*.4;
+}
 
-animate(performance.now());
+// بداية المباراة
+document.getElementById('play').onclick=()=>{
+ playing=true;
+ document.getElementById('start').style.display='none';
+};
+
+let last=performance.now();
+function frame(now){
+ requestAnimationFrame(frame);
+ const dt=Math.min((now-last)/16.67,2);last=now;
+ const t=now/1000;
+
+ if(playing){
+  // اللاعب الذي تتحكم فيه
+  const speed=sprint?.22:.13;
+  controlled.root.position.x+=joystick.x*speed*dt;
+  controlled.root.position.z+=joystick.y*speed*dt;
+  controlled.speed=Math.hypot(joystick.x,joystick.y);
+  if(controlled.speed>.1)
+   controlled.root.rotation.y=Math.atan2(joystick.x,-joystick.y);
+  clamp(controlled.root);
+
+  // بقية فريقك تتحرك حول الكرة
+  home.forEach(p=>{
+   if(p===controlled||p.isKeeper)return;
+   const target=new THREE.Vector3(ball.position.x*.5,0,p.root.position.z);
+   p.root.position.x+=(target.x-p.root.position.x)*.008*dt;
+   p.speed=.2;
+  });
+
+  // الخصم يضغط على الكرة
+  away.forEach((p,i)=>{
+   if(p.isKeeper)return;
+   const target=ball.position.clone();
+   const dx=target.x-p.root.position.x;
+   const dz=target.z-p.root.position.z;
+   const len=Math.hypot(dx,dz)||1;
+   p.root.position.x+=dx/len*.055*dt;
+   p.root.position.z+=dz/len*.055*dt;
+   p.speed=.6;
+   clamp(p.root);
+  });
+
+  // الحراس
+  keeperHome.root.position.x=THREE.MathUtils.clamp(ball.position.x*.45,-3.5,3.5);
+  keeperAway.root.position.x=THREE.MathUtils.clamp(ball.position.x*.45,-3.5,3.5);
+
+  // استحواذ اللاعب على الكرة
+  if(distance(controlled.root.position,ball.position)<1.45 &&
+     ballVelocity.length()<.3){
+   ball.position.x=controlled.root.position.x;
+   ball.position.z=controlled.root.position.z-1;
+  }
+
+  // فيزياء الكرة
+  ball.position.add(ballVelocity.clone().multiplyScalar(dt));
+  ballVelocity.multiplyScalar(Math.pow(.986,dt));
+  ball.position.y=.35;
+
+  if(Math.abs(ball.position.x)>16){
+   ball.position.x=Math.sign(ball.position.x)*16;
+   ballVelocity.x*=-.5;
+  }
+
+  // تسجيل الأهداف
+  if(ball.position.z<-29&&Math.abs(ball.position.x)<4){
+   scoreHome++;resetBall();
+  }
+  if(ball.position.z>25&&Math.abs(ball.position.x)<4){
+   scoreAway++;resetBall();
+  }
+
+  document.getElementById('score').textContent=scoreHome+' - '+scoreAway;
+
+  [...home,...away].forEach(p=>animatePlayer(p,t));
+
+  camera.position.x+=(controlled.root.position.x-camera.position.x)*.05;
+  camera.position.z+=(controlled.root.position.z+13-camera.position.z)*.05;
+  camera.lookAt(controlled.root.position.x,0,controlled.root.position.z-5);
+ }
+
+ renderer.render(scene,camera);
+}
+frame(performance.now());
 
 window.addEventListener('resize',()=>{
  camera.aspect=innerWidth/innerHeight;
